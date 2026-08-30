@@ -4,6 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import prisma from "./lib/prisma";
 import emailRoutes from "./routes/email.routes";
+import authRoutes from "./routes/auth.routes";
 import { initializeEmailIndex } from "./services/search/elasticsearch.service";
 import { setupBullBoard } from "./dashboard/bull-board";
 
@@ -16,6 +17,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(morgan("dev"));
 
+app.use("/auth", authRoutes);
 app.use("/emails", emailRoutes);
 
 
