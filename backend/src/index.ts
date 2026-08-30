@@ -45,15 +45,15 @@ app.get("/health", async (req, res) => {
   }
 });
 
-const PORT = 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 initializeEmailIndex()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  })
   .catch((error) => {
     console.error("Failed to initialize Elasticsearch:", error);
-    process.exit(1);
+    console.log("Continuing without Elasticsearch...");
+  })
+  .finally(() => {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+    });
   });
