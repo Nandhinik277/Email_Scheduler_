@@ -872,6 +872,9 @@ The complete demonstration can be presented in the following order:
 ---
 
 ## Deployment
+live link https://email-scheduler-opal.vercel.app
+TEST EMAIL real123@gmail.com
+pwd: Test@123456
 
 ### Frontend
 
