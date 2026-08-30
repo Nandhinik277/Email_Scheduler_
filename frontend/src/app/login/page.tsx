@@ -1,17 +1,65 @@
 ﻿"use client";
 
 import { Button } from "@/components/ui/Button";
-import { Mail, ShieldCheck, Sparkles } from "lucide-react";
+import { Lock, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
-export default function LoginPage() {
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function LoginContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+  const handleCredentialsSignIn = async () => {
+    if (!email.trim()) {
+      setError("Please enter a valid email.");
+      return;
+    }
+
+    if (!emailPattern.test(email.trim())) {
+      setError("Please enter a valid email.");
+      return;
+    }
+
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError("");
+
+    const result = await signIn("credentials", {
+      email: email.trim().toLowerCase(),
+      password,
+      redirect: false,
+      callbackUrl: "/dashboard",
+    });
+
+    if (result?.ok) {
+      router.push("/dashboard");
+      return;
+    }
+
+    setError("Invalid email or password.");
+    setIsSubmitting(false);
+  };
+
   const handleGoogleSignIn = async () => {
+    setError("");
     setIsGoogleLoading(true);
     await signIn("google", { callbackUrl: "/dashboard" });
   };
+
+  const successMessage = searchParams.get("registered") === "1" ? "Account created successfully. Please sign in." : "";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_#f8f5f1,_#f5f5f4_40%,_#f1f5f9_100%)] px-4 py-10 sm:px-6 lg:px-8">
@@ -42,7 +90,7 @@ export default function LoginPage() {
 
           <div className="flex items-center gap-2 text-sm text-stone-600">
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            Secure Google-based workspace access
+            Secure workspace access for your team
           </div>
         </div>
 
@@ -51,14 +99,86 @@ export default function LoginPage() {
             <div className="mb-8">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Welcome back</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight text-stone-900">Sign in to continue</h2>
-              <p className="mt-2 text-sm text-stone-600">Use your Google account to access your workspace.</p>
+            </div>
+
+            {successMessage ? (
+              <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                {successMessage}
+              </div>
+            ) : null}
+
+            <form
+              className="space-y-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleCredentialsSignIn();
+              }}
+              noValidate
+            >
+              <div>
+                <label htmlFor="email" className="mb-2 block text-sm font-medium text-stone-700">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                    placeholder="you@company.com"
+                    autoComplete="email"
+                    aria-label="Email"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="mb-2 block text-sm font-medium text-stone-700">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    aria-label="Password"
+                  />
+                </div>
+              </div>
+
+              {error ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {error}
+                </div>
+              ) : null}
+
+              <Button
+                type="submit"
+                className="w-full justify-center rounded-xl bg-stone-900 px-4 py-3 text-white hover:bg-stone-800 disabled:bg-stone-400"
+                disabled={isSubmitting || isGoogleLoading}
+              >
+                {isSubmitting ? "Signing in..." : "Sign in"}
+              </Button>
+            </form>
+
+            <div className="my-6 flex items-center gap-4">
+              <div className="h-px flex-1 bg-stone-200" />
+              <span className="text-xs font-medium uppercase tracking-[0.2em] text-stone-400">OR</span>
+              <div className="h-px flex-1 bg-stone-200" />
             </div>
 
             <Button
               type="button"
               variant="outline"
               onClick={handleGoogleSignIn}
-              disabled={isGoogleLoading}
+              disabled={isGoogleLoading || isSubmitting}
               className="w-full justify-center rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-800 shadow-sm hover:bg-stone-50"
             >
               {isGoogleLoading ? (
@@ -82,12 +202,23 @@ export default function LoginPage() {
               )}
             </Button>
 
-            <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600">
-              This workspace uses Google single sign-on for secure access. No mock credential login is used.
-            </div>
+            <p className="mt-6 text-center text-sm text-stone-600">
+              Don&apos;t have an account?{" "}
+              <Link href="/signup" className="font-semibold text-stone-900 hover:text-stone-700 focus:outline-none focus:ring-2 focus:ring-stone-300">
+                Create one
+              </Link>
+            </p>
           </div>
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-stone-600">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

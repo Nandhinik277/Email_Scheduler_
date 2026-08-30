@@ -1,17 +1,90 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
-import { Mail, ShieldCheck, Sparkles } from "lucide-react";
+import { Lock, Mail, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function SignUpPage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
+    setError("");
     setIsGoogleLoading(true);
     await signIn("google", { callbackUrl: "/dashboard" });
+  };
+
+  const handleCreateAccount = async () => {
+    if (!name.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+
+    if (!email.trim() || !emailPattern.test(email.trim())) {
+      setError("Please enter a valid email.");
+      return;
+    }
+
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (!confirmPassword) {
+      setError("Please confirm your password.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setError(payload?.message || "Unable to create account.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      router.push("/login?registered=1");
+    } catch {
+      setError("Unable to create account.");
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -35,13 +108,13 @@ export default function SignUpPage() {
 
             <h1 className="text-4xl font-semibold tracking-tight text-stone-900">Create your workspace</h1>
             <p className="mt-4 text-base leading-7 text-stone-600">
-              Use Google to create your secure workspace and manage scheduled email campaigns from one place.
+              Set up your secure account and begin planning, scheduling, and sending campaigns from one workspace.
             </p>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-stone-600">
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            Secure Google-based account setup
+            Secure account setup for campaign teams
           </div>
         </div>
 
@@ -49,15 +122,119 @@ export default function SignUpPage() {
           <div className="w-full max-w-md">
             <div className="mb-8">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Create account</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-stone-900">Continue with Google</h2>
-              <p className="mt-2 text-sm text-stone-600">Use your Google account to set up your workspace and continue to the dashboard.</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-stone-900">Get started</h2>
+            </div>
+
+            <form
+              className="space-y-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleCreateAccount();
+              }}
+              noValidate
+            >
+              <div>
+                <label htmlFor="name" className="mb-2 block text-sm font-medium text-stone-700">
+                  Full name
+                </label>
+                <div className="relative">
+                  <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                  <input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                    placeholder="Jane Doe"
+                    autoComplete="name"
+                    aria-label="Full name"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="signup-email" className="mb-2 block text-sm font-medium text-stone-700">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                  <input
+                    id="signup-email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                    placeholder="you@company.com"
+                    autoComplete="email"
+                    aria-label="Email"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="signup-password" className="mb-2 block text-sm font-medium text-stone-700">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                  <input
+                    id="signup-password"
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                    placeholder="At least 8 characters"
+                    autoComplete="new-password"
+                    aria-label="Password"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="confirm-password" className="mb-2 block text-sm font-medium text-stone-700">
+                  Confirm password
+                </label>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                  <input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                    placeholder="Repeat your password"
+                    autoComplete="new-password"
+                    aria-label="Confirm password"
+                  />
+                </div>
+              </div>
+
+              {error ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {error}
+                </div>
+              ) : null}
+
+              <Button
+                type="submit"
+                className="w-full justify-center rounded-xl bg-stone-900 px-4 py-3 text-white hover:bg-stone-800 disabled:bg-stone-400"
+                disabled={isSubmitting || isGoogleLoading}
+              >
+                {isSubmitting ? "Creating account..." : "Create account"}
+              </Button>
+            </form>
+
+            <div className="my-6 flex items-center gap-4">
+              <div className="h-px flex-1 bg-stone-200" />
+              <span className="text-xs font-medium uppercase tracking-[0.2em] text-stone-400">OR</span>
+              <div className="h-px flex-1 bg-stone-200" />
             </div>
 
             <Button
               type="button"
               variant="outline"
               onClick={handleGoogleSignIn}
-              disabled={isGoogleLoading}
+              disabled={isGoogleLoading || isSubmitting}
               className="w-full justify-center rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-800 shadow-sm hover:bg-stone-50"
             >
               {isGoogleLoading ? (
@@ -80,10 +257,6 @@ export default function SignUpPage() {
                 </>
               )}
             </Button>
-
-            <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600">
-              This workspace uses Google single sign-on for secure access.
-            </div>
 
             <p className="mt-6 text-center text-sm text-stone-600">
               Already have an account?{" "}
