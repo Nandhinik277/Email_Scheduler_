@@ -1,53 +1,16 @@
 ﻿"use client";
 
 import { Button } from "@/components/ui/Button";
-import { Lock, Mail, ShieldCheck, Sparkles } from "lucide-react";
+import { Mail, ShieldCheck, Sparkles } from "lucide-react";
 import { signIn } from "next-auth/react";
-import Link from "next/link";
 import { useState } from "react";
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isEmailLoading, setIsEmailLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
-    setError("");
     setIsGoogleLoading(true);
     await signIn("google", { callbackUrl: "/dashboard" });
-  };
-
-  const handleEmailSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError("");
-
-    if (!email.trim()) {
-      setError("Email is required.");
-      return;
-    }
-
-    if (!emailPattern.test(email.trim())) {
-      setError("Enter a valid email address.");
-      return;
-    }
-
-    if (!password.trim()) {
-      setError("Password is required.");
-      return;
-    }
-
-    setIsEmailLoading(true);
-
-    setTimeout(() => {
-      setIsEmailLoading(false);
-      setError(
-        "Email/password sign-in is not configured in this frontend yet. Google OAuth remains the working authentication method for this project."
-      );
-    }, 400);
   };
 
   return (
@@ -79,7 +42,7 @@ export default function LoginPage() {
 
           <div className="flex items-center gap-2 text-sm text-stone-600">
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            Secure workspace access with Google authentication
+            Secure Google-based workspace access
           </div>
         </div>
 
@@ -88,83 +51,14 @@ export default function LoginPage() {
             <div className="mb-8">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Welcome back</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight text-stone-900">Sign in to continue</h2>
-              <p className="mt-2 text-sm text-stone-600">Use your workspace access to manage scheduled campaigns.</p>
-            </div>
-
-            <form onSubmit={handleEmailSignIn} className="space-y-5" noValidate>
-              <div>
-                <label htmlFor="email" className="mb-2 block text-sm font-medium text-stone-700">
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
-                    placeholder="you@company.com"
-                    autoComplete="email"
-                    aria-label="Email"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <label htmlFor="password" className="block text-sm font-medium text-stone-700">
-                    Password
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setError("Password reset is not available until a real credential backend is connected.")}
-                    className="text-xs font-medium text-stone-600 transition hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-300"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-10 pr-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
-                    placeholder="Enter your password"
-                    autoComplete="current-password"
-                    aria-label="Password"
-                  />
-                </div>
-              </div>
-
-              {error ? (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                  {error}
-                </div>
-              ) : null}
-
-              <Button
-                type="submit"
-                className="w-full justify-center rounded-xl bg-stone-900 px-4 py-3 text-white hover:bg-stone-800 disabled:bg-stone-400"
-                disabled={isEmailLoading || isGoogleLoading}
-              >
-                {isEmailLoading ? "Signing in..." : "Sign in"}
-              </Button>
-            </form>
-
-            <div className="my-6 flex items-center gap-4">
-              <div className="h-px flex-1 bg-stone-200" />
-              <span className="text-xs font-medium uppercase tracking-[0.2em] text-stone-400">OR</span>
-              <div className="h-px flex-1 bg-stone-200" />
+              <p className="mt-2 text-sm text-stone-600">Use your Google account to access your workspace.</p>
             </div>
 
             <Button
               type="button"
               variant="outline"
               onClick={handleGoogleSignIn}
-              disabled={isGoogleLoading || isEmailLoading}
+              disabled={isGoogleLoading}
               className="w-full justify-center rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-800 shadow-sm hover:bg-stone-50"
             >
               {isGoogleLoading ? (
@@ -188,12 +82,9 @@ export default function LoginPage() {
               )}
             </Button>
 
-            <p className="mt-6 text-center text-sm text-stone-600">
-              Don&apos;t have an account?{" "}
-              <Link href="/signup" className="font-semibold text-stone-900 hover:text-stone-700 focus:outline-none focus:ring-2 focus:ring-stone-300">
-                Create one
-              </Link>
-            </p>
+            <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600">
+              This workspace uses Google single sign-on for secure access. No mock credential login is used.
+            </div>
           </div>
         </div>
       </div>
